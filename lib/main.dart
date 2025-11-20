@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/find_storage_page.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const TravelLightApp());
@@ -13,11 +14,7 @@ class TravelLightApp extends StatelessWidget {
     return MaterialApp(
       title: 'TravelLight',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: const Color(0xFF5B34FF),
-        scaffoldBackgroundColor: const Color(0xFFF5F5F7),
-      ),
+      theme: AppTheme.light,
       home: FindStoragePage(),
     );
   }

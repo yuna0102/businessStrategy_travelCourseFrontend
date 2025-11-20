@@ -5,19 +5,31 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/storage_location.dart';
 
-/// iOS 시뮬레이터 기준 baseUrl
-const String baseUrl = 'http://127.0.0.1:8000';
+class StorageApiService {
+    static const String baseUrl = 'http://127.0.0.1:8000/api';
 
-class ApiClient {
-    Future<List<StorageLocation>> fetchStorages() async {
-        final uri = Uri.parse('$baseUrl/api/storages/');
-        final response = await http.get(uri);
+    static Future<List<StorageLocation>> fetchStorages({
+        DistrictFilter? district,
+        StorageType? type,
+    }) async {
+        final Map<String, String> params = {};
 
-        if (response.statusCode != 200) {
-        throw Exception('Failed to load storages: ${response.statusCode}');
+        if (district != null) {
+        params['district'] = district.backendValue;
+        }
+        if (type != null) {
+        params['type'] = type.backendValue;
         }
 
-        final List<dynamic> data = jsonDecode(response.body);
+        final uri = Uri.parse('$baseUrl/storages/')
+            .replace(queryParameters: params.isEmpty ? null : params);
+
+        final res = await http.get(uri);
+        if (res.statusCode != 200) {
+        throw Exception('Failed to load storages');
+        }
+
+        final List<dynamic> data = json.decode(res.body) as List<dynamic>;
         return data
             .map((e) => StorageLocation.fromJson(e as Map<String, dynamic>))
             .toList();
