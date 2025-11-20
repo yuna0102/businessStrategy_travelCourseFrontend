@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/find_storage_page.dart';
+import 'screens/country_select_page.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -15,7 +15,7 @@ class TravelLightApp extends StatelessWidget {
       title: 'TravelLight',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: FindStoragePage(),
+      home: const CountrySelectPage(), // 첫 화면 명시
     );
   }
 }

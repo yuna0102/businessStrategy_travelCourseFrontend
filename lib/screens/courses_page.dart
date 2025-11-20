@@ -46,12 +46,16 @@ class CoursesPage extends StatefulWidget {
     /// 보여줄 코스 리스트 (나중에 서버 데이터로 교체)
     final List<Course> courses;
 
+    /// Reddit 추천 국가 라벨 (예: "🇬🇧 UK")
+    final String redditCountryLabel;
+
     const CoursesPage({
         super.key,
         this.courses = const [],
         this.startFromLocation,
         this.showBookingBanner = false,
         this.bookingBannerMessage,
+        this.redditCountryLabel = '🇬🇧 UK', //default값 지정
     });
 
     /// 지금은 목업용으로 이 팩토리 사용 → 나중에 서버 연동 시 이 부분만 교체
@@ -171,7 +175,9 @@ class _CoursesPageState extends State<CoursesPage> {
                     child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                     children: [
-                        _RedditRecommendationCard(),
+                        _RedditRecommendationCard(
+                            countryLabel: widget.redditCountryLabel,
+                        ),
                         const SizedBox(height: 16),
                         ...widget.courses.map(
                         (c) => Padding(
@@ -366,7 +372,10 @@ class _DurationChip extends StatelessWidget {
 
 /// “Top Picks of Reddit” 카드
 class _RedditRecommendationCard extends StatelessWidget {
-    const _RedditRecommendationCard();
+    final String countryLabel;
+    const _RedditRecommendationCard({
+        required this.countryLabel,
+    });
 
     @override
     Widget build(BuildContext context) {
@@ -412,7 +421,7 @@ class _RedditRecommendationCard extends StatelessWidget {
             Row(
                 children: [
                 Text(
-                    '🇬🇧 UK',
+                    countryLabel,
                     style: AppTextStyles.pageTitle.copyWith(
                     fontSize: 24,
                     color: const Color(0xFF374151),
