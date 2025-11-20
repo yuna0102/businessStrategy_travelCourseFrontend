@@ -4,6 +4,7 @@ import '../widgets/storage_card.dart';
 import '../theme/app_theme.dart';
 import '../services/api_client.dart';
 import '../widgets/storage_booking_bottom_sheet.dart';
+import 'package:travellight_frontend/screens/courses_page.dart';
 
 class FindStoragePage extends StatefulWidget {
     const FindStoragePage({super.key});
@@ -12,7 +13,7 @@ class FindStoragePage extends StatefulWidget {
     State<FindStoragePage> createState() => _FindStoragePageState();
     }
 
-    class _FindStoragePageState extends State<FindStoragePage> {
+class _FindStoragePageState extends State<FindStoragePage> {
     // 필터 선택 상태 표시
     DistrictFilter _selectedDistrict = DistrictFilter.yongsan;
     StorageType _selectedType = StorageType.stationLocker;
@@ -45,6 +46,26 @@ class FindStoragePage extends StatefulWidget {
         _futureStorages = _loadStorages();
         });
     }
+
+
+    Future<void> _openStorageBookingBottomSheet(StorageLocation storage) async {
+        final selection = await showModalBottomSheet<StorageBookingSelection>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => StorageBookingBottomSheet(
+            storage: storage,
+        ),
+        );
+
+        if (!mounted || selection == null) return;
+            Navigator.of(context).push(
+            MaterialPageRoute(
+                builder: (_) => CoursesPage.mock(),
+            ),
+        );
+    }
+
 
     @override
     Widget build(BuildContext context) {
@@ -200,17 +221,8 @@ class FindStoragePage extends StatefulWidget {
                             final storage = storages[index];
 
                             return StorageCard(
-                            storage: storage,
-                            onTap: () {
-                                showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,            // 위로 크게 올라오게
-                                backgroundColor: Colors.transparent, // 바깥은 반투명
-                                builder: (_) => StorageBookingBottomSheet(
-                                    storage: storage,                  // 선택된 보관소 정보 전달
-                                ),
-                                );
-                            },
+                                storage: storage,
+                                onTap: () => _openStorageBookingBottomSheet(storage),
                             );
                         },
                         separatorBuilder: (_, __) => const SizedBox(height: 16),
@@ -222,4 +234,5 @@ class FindStoragePage extends StatefulWidget {
         ),
         );
     }
+
 }

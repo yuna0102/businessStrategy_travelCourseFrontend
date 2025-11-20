@@ -2,6 +2,23 @@ import 'package:flutter/material.dart';
 import '../models/storage_location.dart';
 import '../theme/app_theme.dart';
 
+/// 바텀 시트에서 선택한 결과를 담는 모델
+class StorageBookingSelection {
+    final int offsetHours;   // 지금으로부터 몇 시간 뒤에 맡기는지 (0~48)
+    final int smallCount;
+    final int mediumCount;
+    final int largeCount;
+    final double totalPrice;    // 현재는 1시간 기준 총 금액(임시)
+    const StorageBookingSelection({
+        required this.offsetHours,
+        required this.smallCount,
+        required this.mediumCount,
+        required this.largeCount,
+        required this.totalPrice,
+    });
+}
+
+// 바텀 시트
 class StorageBookingBottomSheet extends StatefulWidget {
     final StorageLocation storage;
 
@@ -13,9 +30,14 @@ class StorageBookingBottomSheet extends StatefulWidget {
     @override
     State<StorageBookingBottomSheet> createState() =>
         _StorageBookingBottomSheetState();
-    }
+}
 
-    class _StorageBookingBottomSheetState extends State<StorageBookingBottomSheet> {
+// 바텀 시트 사용자 선택값별 상태 정의
+class _StorageBookingBottomSheetState extends State<StorageBookingBottomSheet> {
+    /// Now 로부터 몇 시간 뒤에 맡길지 (0~48h)
+    int _selectedHourOffset = 0;
+
+    // small/medium/large 개수 디폴트 값
     int _smallCount = 0;
     int _mediumCount = 0;
     int _largeCount = 0;
@@ -82,23 +104,74 @@ class StorageBookingBottomSheet extends StatefulWidget {
                         ),
                     ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 0),
+                    // Booking Time 영역 (Now ~ 48h later 슬라이더)
+                    Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                        'Booking Time',
+                        style: AppTextStyles.bodyBold, // 프로젝트에 맞게 스타일 선택
+                    ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                        children: [
+                        Slider(
+                            value: _selectedHourOffset.toDouble(),
+                            min: 0,
+                            max: 48,
+                            divisions: 48, // 1시간 단위
+                            activeColor: AppColors.primary,
+                            inactiveColor: AppColors.borderSoft,
+                            onChanged: (value) {
+                            setState(() {
+                                _selectedHourOffset = value.round();
+                            });
+                            },
+                        ),
+                        const SizedBox(height: 0),
+                        Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                            Text(
+                                'Now',
+                                style: AppTextStyles.caption,
+                            ),
+                            Text(
+                                '48h later',
+                                style: AppTextStyles.caption,
+                            ),
+                            ],
+                        ),
+                        ],
+                    ),
+                ),
 
                     // Small / Medium / Large 카드들
+                    const SizedBox(height: 8),
                     _buildSizeCard(
                     label: 'Small',
                     price: widget.storage.priceSmallPerHour,
                     count: _smallCount,
                     onChanged: (v) => setState(() => _smallCount = v),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     _buildSizeCard(
                     label: 'Medium',
                     price: widget.storage.priceMediumPerHour,
                     count: _mediumCount,
                     onChanged: (v) => setState(() => _mediumCount = v),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     _buildSizeCard(
                     label: 'Large',
                     price: widget.storage.priceLargePerHour,
@@ -137,7 +210,7 @@ class StorageBookingBottomSheet extends StatefulWidget {
                     ],
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 6),
 
                     // Booking 버튼
                     SizedBox(
@@ -154,8 +227,16 @@ class StorageBookingBottomSheet extends StatefulWidget {
                         onPressed: _totalPerHour == 0
                             ? null
                             : () {
-                                // TODO: 실제 예약 로직 연결
-                                Navigator.of(context).pop();
+                                final selection = StorageBookingSelection(
+                                offsetHours: _selectedHourOffset,
+                                smallCount: _smallCount,
+                                mediumCount: _mediumCount,
+                                largeCount: _largeCount,
+                                totalPrice: _totalPerHour,
+                                );
+
+                                // 선택 결과를 상위(FindStoragePage)로 반환
+                                Navigator.of(context).pop(selection);
                             },
                         child: Text(
                         'Booking',
