@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
     // Brand
-    static const primary = Color(0xFF8400FF); // 메인 컬러
+    static const primary = Color(0xFF007AFF); // 메인 컬러
     static const primarySoft = Color(0xFFF3E9FF);
     // 버튼 사용 컬러
     static const filterSelected = Color(0xFF8400FF);
