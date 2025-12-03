@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../models/user_profile.dart';
 import 'find_storage_page.dart';
@@ -42,7 +43,11 @@ class SignupPage extends StatefulWidget {
 
         Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-            builder: (_) => const FindStoragePage(),
+            // Provide the user profile to downstream pages (FindStoragePage -> CoursesPage)
+            builder: (_) => Provider<UserProfile>.value(
+                value: profile,
+                child: const FindStoragePage(),
+            ),
         ),
         );
 

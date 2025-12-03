@@ -1,33 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../models/course.dart';          // ✅ 새로 추가
+import 'course_detail_page.dart';       // ✅ Step1-3에서 쓸 예정
 
-/// UI 전용 코스 모델 (나중에 API 모델로 교체 가능)
-class Course {
-    final String id;
-    final String title;
-    final String subtitle;
-    final String imageUrl;
-    final int walkingMinutes;
-    final String categoryEmoji; // 아이콘/이모지
-    final Color categoryBgColor;
-
-    final String reviewerName;
-    final String reviewerMeta;   // (🇬🇧, 28)
-    final String reviewAgoText;  // 3 weeks ago
-
-    Course({
-        required this.id,
-        required this.title,
-        required this.subtitle,
-        required this.imageUrl,
-        required this.walkingMinutes,
-        required this.categoryEmoji,
-        required this.categoryBgColor,
-        required this.reviewerName,
-        required this.reviewerMeta,
-        required this.reviewAgoText,
-    });
-}
 
 enum CourseDurationFilter {
     thirty,
@@ -180,11 +155,20 @@ class _CoursesPageState extends State<CoursesPage> {
                         ),
                         const SizedBox(height: 16),
                         ...widget.courses.map(
-                        (c) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _CourseCard(course: c),
-                        ),
-                        ),
+                            (c) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: GestureDetector(
+                                onTap: () {
+                                    Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                        builder: (_) => CourseDetailPage(course: c),
+                                    ),
+                                    );
+                                },
+                                child: _CourseCard(course: c),
+                                ),
+                            ),
+),
                     ],
                     ),
                 ),
@@ -478,7 +462,6 @@ class _RedditRecommendationCard extends StatelessWidget {
     }
 }
 
-/// 개별 코스 카드
 class _CourseCard extends StatelessWidget {
     final Course course;
 
@@ -486,163 +469,177 @@ class _CourseCard extends StatelessWidget {
 
     @override
     Widget build(BuildContext context) {
-        return Container(
-        decoration: BoxDecoration(
+        return GestureDetector(
+        onTap: () {
+            Navigator.of(context).push(
+            MaterialPageRoute(
+                builder: (_) => CourseDetailPage(course: course),
+            ),
+            );
+        },
+        child: Container(
+            decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFFF3F4F6)),
             boxShadow: const [
-            BoxShadow(
+                BoxShadow(
                 color: Color(0x0C000000),
                 blurRadius: 2,
                 offset: Offset(0, 1),
-            ),
+                ),
             ],
-        ),
-        child: Column(
+            ),
+            child: Column(
             children: [
-            // 상단 이미지 + 이동시간 배지
-            Stack(
+                // 상단 이미지 + 이동시간 배지
+                Stack(
                 children: [
-                ClipRRect(
+                    ClipRRect(
                     borderRadius:
                         const BorderRadius.vertical(top: Radius.circular(16)),
                     child: AspectRatio(
-                    aspectRatio: 341 / 192,
-                    child: Image.network(
+                        aspectRatio: 341 / 192,
+                        child: Image.network(
                         course.imageUrl,
                         fit: BoxFit.cover,
-                    ),
+                        ),
                     ),
                 ),
                 Positioned(
                     right: 12,
                     top: 12,
                     child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.95),
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(color: const Color(0xFFE5E7EB)),
-                    ),
-                    child: Row(
+                        ),
+                        child: Row(
                         children: [
-                        const Icon(Icons.directions_walk, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
+                            const Icon(Icons.directions_walk, size: 14),
+                            const SizedBox(width: 4),
+                            Text(
                             '${course.walkingMinutes} min',
                             style: AppTextStyles.caption.copyWith(
-                            color: const Color(0xFF1F2937),
+                                color: const Color(0xFF1F2937),
+                            ),
+                            ),
+                        ],
+                        ),
+                    ),
+                    ),
+                ],
+                ),
+                // 텍스트 영역
+                Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                    // 타이틀 + 카테고리 태그
+                    Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                        Expanded(
+                            child: Text(
+                            course.title,
+                            style: AppTextStyles.bodyBold.copyWith(
+                                fontSize: 16,
+                                color: const Color(0xFF111827),
+                            ),
+                            ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                            color: course.categoryBgColor,
+                            borderRadius: BorderRadius.circular(999),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                            course.categoryEmoji,
+                            style: const TextStyle(fontSize: 16),
                             ),
                         ),
                         ],
                     ),
-                    ),
-                ),
-                ],
-            ),
-            // 텍스트 영역
-            Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                    // 타이틀 + 카테고리 태그
-                    Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                        Expanded(
-                        child: Text(
-                            course.title,
-                            style: AppTextStyles.bodyBold.copyWith(
-                            fontSize: 16,
-                            color: const Color(0xFF111827),
-                            ),
-                        ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                            color: course.categoryBgColor,
-                            borderRadius: BorderRadius.circular(999),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(course.categoryEmoji, style: const TextStyle(fontSize: 16)),
-                        ),
-                    ],
-                    ),
                     const SizedBox(height: 4),
                     Text(
-                    course.subtitle,
-                    style: AppTextStyles.body.copyWith(
+                        course.subtitle,
+                        style: AppTextStyles.body.copyWith(
                         fontSize: 14,
                         color: const Color(0xFF4B5563),
-                    ),
+                        ),
                     ),
                     const SizedBox(height: 8),
                     // 리뷰어 박스
                     Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                    decoration: BoxDecoration(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 11),
+                        decoration: BoxDecoration(
                         color: const Color(0xFFEFF6FF),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: const Color(0xFFDBEAFE)),
-                    ),
-                    child: Row(
+                        ),
+                        child: Row(
                         children: [
-                        Container(
+                            Container(
                             width: 28,
                             height: 28,
                             decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: Colors.white, width: 2),
-                            image: const DecorationImage(
-                                image:
-                                    NetworkImage('https://picsum.photos/28/28'),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(color: Colors.white, width: 2),
+                                image: const DecorationImage(
+                                image: NetworkImage(
+                                    'https://picsum.photos/28/28'),
                                 fit: BoxFit.cover,
+                                ),
                             ),
                             ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
+                            const SizedBox(width: 8),
+                            Expanded(
                             child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                 Text(
-                                course.reviewerName,
-                                style: AppTextStyles.caption.copyWith(
+                                    course.reviewerName,
+                                    style: AppTextStyles.caption.copyWith(
                                     color: const Color(0xFF374151),
-                                ),
+                                    ),
                                 ),
                                 Text(
-                                course.reviewerMeta,
-                                style: AppTextStyles.caption.copyWith(
+                                    course.reviewerMeta,
+                                    style: AppTextStyles.caption.copyWith(
                                     color: const Color(0xFF6B7280),
-                                ),
+                                    ),
                                 ),
                                 Text(
-                                course.reviewAgoText,
-                                style: AppTextStyles.caption.copyWith(
+                                    course.reviewAgoText,
+                                    style: AppTextStyles.caption.copyWith(
                                     color: const Color(0xFF374151),
+                                    ),
                                 ),
-                                ),
-                            ],
+                                ],
                             ),
-                        ),
-                        const Icon(Icons.chevron_right,
-                            size: 18, color: Color(0xFF6B7280)),
+                            ),
+                            const Icon(
+                            Icons.chevron_right,
+                            size: 18,
+                            color: Color(0xFF6B7280),
+                            ),
                         ],
+                        ),
                     ),
-                    ),
-                ],
+                    ],
                 ),
-            ),
+                ),
             ],
+            ),
         ),
         );
     }

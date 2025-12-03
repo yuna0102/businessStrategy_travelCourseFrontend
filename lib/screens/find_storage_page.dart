@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/storage_location.dart';
+import '../models/user_profile.dart';
 import '../widgets/storage_card.dart';
 import '../theme/app_theme.dart';
 import '../services/api_client.dart';
 import '../widgets/storage_booking_bottom_sheet.dart';
 import 'package:travellight_frontend/screens/courses_page.dart';
+import 'package:provider/provider.dart';
+import 'courses_page.dart';
 
 class FindStoragePage extends StatefulWidget {
     const FindStoragePage({super.key});
@@ -222,7 +225,39 @@ class _FindStoragePageState extends State<FindStoragePage> {
 
                             return StorageCard(
                                 storage: storage,
-                                onTap: () => _openStorageBookingBottomSheet(storage),
+                                onTap: () async {
+                                    // 1) 바텀시트에서 짐 개수/시간 선택
+                                    final selection =
+                                        await showModalBottomSheet<StorageBookingSelection>(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (_) => StorageBookingBottomSheet(
+                                        storage: storage,
+                                    ),
+                                    );
+
+                                    // 사용자가 취소했거나, 위젯 dispose 된 경우
+                                    if (!mounted || selection == null) return;
+
+                                    // 2) 현재 선택된 국가 정보 가져오기 (CountrySelect에서 저장해둔 값)
+                                    final profile = context.read<UserProfile>();
+
+                                    // 3) CoursesPage로 이동하면서 redditCountryLabel 전달
+                                    Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                        builder: (_) => CoursesPage(
+                                        startFromLocation: storage.name,
+                                        showBookingBanner: true,
+                                        bookingBannerMessage:
+                                            'Your luggage booking request has been received.',
+                                        redditCountryLabel: profile.redditCountryLabel,
+                                        // 지금은 목업 데이터 재사용
+                                        courses: CoursesPage.mock().courses,
+                                        ),
+                                    ),
+                                    );
+                                },
                             );
                         },
                         separatorBuilder: (_, __) => const SizedBox(height: 16),

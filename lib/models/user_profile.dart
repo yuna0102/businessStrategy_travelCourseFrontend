@@ -61,6 +61,9 @@ class UserProfile {
     final String lastName;
     final int age;
 
+    /// Convenience getter so downstream widgets can access the Reddit label directly
+    String get redditCountryLabel => country.redditCountryLabel;
+
     const UserProfile({
         required this.country,
         required this.firstName,
