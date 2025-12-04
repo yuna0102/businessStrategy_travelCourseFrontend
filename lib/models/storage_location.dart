@@ -32,7 +32,7 @@ enum StorageType {
         case StorageType.privateStorage:
             return 'PRIVATE_STORAGE';
         case StorageType.localStorage:
-            return 'LOCAL_STORAGE';
+            return 'CAFE_STORAGE';
         }
     }
 
