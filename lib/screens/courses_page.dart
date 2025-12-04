@@ -1,13 +1,38 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../models/course.dart';          // ✅ 새로 추가
-import 'course_detail_page.dart';       // ✅ Step1-3에서 쓸 예정
+import '../models/course.dart';          
+import 'course_detail_page.dart';       
+
 
 
 enum CourseDurationFilter {
-    thirty,
-    sixty,
-    oneTwenty,
+  thirty,    // 30분
+  sixty,     // 60분 = 1 hour
+  oneTwenty, // 120분 = 2 hours
+}
+
+extension CourseDurationFilterX on CourseDurationFilter {
+    String get label {
+        switch (this) {
+        case CourseDurationFilter.thirty:
+            return '30 min';
+        case CourseDurationFilter.sixty:
+            return '1 hour';
+        case CourseDurationFilter.oneTwenty:
+            return '2 hours';
+        }
+    }
+
+    int get minutes {
+        switch (this) {
+        case CourseDurationFilter.thirty:
+            return 30;
+        case CourseDurationFilter.sixty:
+            return 60;
+        case CourseDurationFilter.oneTwenty:
+            return 120;
+        }
+    }
 }
 
 class CoursesPage extends StatefulWidget {
@@ -44,6 +69,7 @@ class CoursesPage extends StatefulWidget {
             id: '1',
             title: 'Insadong Tea Tour',
             subtitle: 'Traditional Korean tea & desserts',
+            durationMinutes: 30,
             imageUrl: 'https://picsum.photos/600/360?1',
             walkingMinutes: 5,
             categoryEmoji: '🍵',
@@ -56,6 +82,7 @@ class CoursesPage extends StatefulWidget {
             id: '2',
             title: 'Gyeongbokgung Palace Tour',
             subtitle: 'Historic royal palace & museum',
+            durationMinutes: 60,
             imageUrl: 'https://picsum.photos/600/360?2',
             walkingMinutes: 12,
             categoryEmoji: '🏛',
@@ -68,6 +95,7 @@ class CoursesPage extends StatefulWidget {
             id: '3',
             title: 'Gwangjang Market Food Tour',
             subtitle: 'Traditional food market & street eats',
+            durationMinutes: 120,
             imageUrl: 'https://picsum.photos/600/360?3',
             walkingMinutes: 18,
             categoryEmoji: '🍜',
@@ -80,6 +108,7 @@ class CoursesPage extends StatefulWidget {
             id: '4',
             title: 'Cafe Onion Anguk',
             subtitle: 'Trendy cafe in hanok building',
+            durationMinutes: 60,
             imageUrl: 'https://picsum.photos/600/360?4',
             walkingMinutes: 8,
             categoryEmoji: '☕️',
@@ -92,6 +121,7 @@ class CoursesPage extends StatefulWidget {
             id: '5',
             title: 'Bukchon Hanok Village',
             subtitle: 'Traditional Korean village & photo spots',
+            durationMinutes: 30,
             imageUrl: 'https://picsum.photos/600/360?5',
             walkingMinutes: 15,
             categoryEmoji: '🏡',
@@ -109,7 +139,19 @@ class CoursesPage extends StatefulWidget {
     }
 
 class _CoursesPageState extends State<CoursesPage> {
-    CourseDurationFilter _selectedFilter = CourseDurationFilter.thirty;
+    CourseDurationFilter _selectedDuration = CourseDurationFilter.thirty;
+    
+    List<Course> get _filteredCourses {
+        final target = _selectedDuration.minutes;
+        // durationMinutes가 target(30/60/120)에 해당하는 코스만 보여주기
+        return widget.courses.where((c) => c.durationMinutes == target).toList();
+    }
+
+    void _onDurationSelected(CourseDurationFilter filter) {
+        setState(() {
+        _selectedDuration = filter;
+        });
+    }
 
     @override
     Widget build(BuildContext context) {
@@ -139,10 +181,8 @@ class _CoursesPageState extends State<CoursesPage> {
 
                 // 시간 필터 (30 min / 1 hour / 2 hours)
                 _DurationFilterRow(
-                    selected: _selectedFilter,
-                    onChanged: (filter) {
-                    setState(() => _selectedFilter = filter);
-                    },
+                    selected: _selectedDuration,
+                    onChanged: _onDurationSelected,
                 ),
 
                 // 나머지는 스크롤 영역
@@ -154,20 +194,25 @@ class _CoursesPageState extends State<CoursesPage> {
                             countryLabel: widget.redditCountryLabel,
                         ),
                         const SizedBox(height: 16),
-                        ...widget.courses.map(
-                            (c) => Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: GestureDetector(
-                                onTap: () {
-                                    Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                        builder: (_) => CourseDetailPage(course: c),
+
+                        if (_filteredCourses.isEmpty)
+                            Padding(
+                                padding: const EdgeInsets.only(top: 24),
+                                child: Center(
+                                child: Text(
+                                    'No courses for this duration yet.',
+                                    style: AppTextStyles.body.copyWith(
+                                    color: AppColors.textMuted,
                                     ),
-                                    );
-                                },
+                                ),
+                                ),
+                            )
+                            else
+                            ..._filteredCourses.map(
+                                (c) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
                                 child: _CourseCard(course: c),
                                 ),
-                            ),
 ),
                     ],
                     ),
@@ -282,28 +327,42 @@ class _DurationFilterRow extends StatelessWidget {
     Widget build(BuildContext context) {
         return Container(
         color: Colors.white,
-        padding:
-            const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
-        child: Row(
+        child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
             children: [
-            _DurationChip(
-                label: '30 min',
-                selected: selected == CourseDurationFilter.thirty,
-                onTap: () => onChanged(CourseDurationFilter.thirty),
+                CourseDurationFilter.thirty,
+                CourseDurationFilter.sixty,
+                CourseDurationFilter.oneTwenty,
+            ].map((filter) {
+                final isSelected = selected == filter;
+                return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                    label: Text(
+                    filter.label,
+                    style: TextStyle(
+                        color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                        fontWeight: FontWeight.w600,
+                    ),
+                    ),
+                    selected: isSelected,
+                    onSelected: (_) => onChanged(filter),
+                    selectedColor: AppColors.primary,
+                    backgroundColor: Colors.white,
+                    side: BorderSide(
+                    color:
+                        isSelected ? AppColors.primary : const Color(0xFFE5E7EB),
+                    ),
+                    shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                ),
+                );
+            }).toList(),
             ),
-            const SizedBox(width: 8),
-            _DurationChip(
-                label: '1 hour',
-                selected: selected == CourseDurationFilter.sixty,
-                onTap: () => onChanged(CourseDurationFilter.sixty),
-            ),
-            const SizedBox(width: 8),
-            _DurationChip(
-                label: '2 hours',
-                selected: selected == CourseDurationFilter.oneTwenty,
-                onTap: () => onChanged(CourseDurationFilter.oneTwenty),
-            ),
-            ],
         ),
         );
     }

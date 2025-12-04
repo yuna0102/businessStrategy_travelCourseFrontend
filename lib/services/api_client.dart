@@ -4,6 +4,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/storage_location.dart';
+import '../models/course.dart';
 
 class StorageApiService {
     static const String baseUrl = 'http://127.0.0.1:8000/api';
@@ -32,6 +33,26 @@ class StorageApiService {
         final List<dynamic> data = json.decode(res.body) as List<dynamic>;
         return data
             .map((e) => StorageLocation.fromJson(e as Map<String, dynamic>))
+            .toList();
+    }
+}
+
+// course api 붙이는 클래스
+class CourseApiService {
+    static const String baseUrl = 'http://127.0.0.1:8000/api';
+
+    /// 특정 보관소의 코스 리스트 가져오기
+    static Future<List<Course>> fetchCoursesByStorage(int storageId) async {
+        final uri = Uri.parse('$baseUrl/storages/$storageId/courses/');
+
+        final res = await http.get(uri);
+        if (res.statusCode != 200) {
+        throw Exception('Failed to load courses');
+        }
+
+        final List<dynamic> data = json.decode(res.body) as List<dynamic>;
+        return data
+            .map((e) => Course.fromJson(e as Map<String, dynamic>))
             .toList();
     }
 }
