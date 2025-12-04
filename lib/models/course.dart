@@ -32,7 +32,10 @@ class Course {
     });
 
     factory Course.fromJson(Map<String, dynamic> json) {
-  // 1) 태그 문자열 가져오기 (없으면 빈 문자열)
+      // 0) 코스 id 문자열로 먼저 뽑기
+        final String idStr = json['id'].toString();
+
+        // 1) 태그 문자열 가져오기 (없으면 빈 문자열)
         final String tag = (json['tags'] ?? '') as String;
 
         // 2) 태그에 따라 이모지 + 배경색 매핑
@@ -50,9 +53,38 @@ class Course {
             bgColor = const Color(0xFFFCE7F3); // 쇼핑/케이컬쳐 느낌의 핑크 톤
         }
 
-        // 3) Course 인스턴스 생성
+        // 3) 목업 프로필 리스트 (이름 / 메타 / 방문 시점)
+        const mockProfiles = [
+            {
+                'name': 'James',
+                'meta': '32',        
+                'ago': '2 weeks ago',
+            },
+            {
+                'name': 'Emma',
+                'meta': '29',
+                'ago': '3 weeks ago',
+            },
+            {
+                'name': 'Satoshi',
+                'meta': '35',
+                'ago': '5 days ago',
+            },
+            {
+                'name': 'Olivia',
+                'meta': '27',
+                'ago': '1 week ago',
+            },
+            ];
+
+        // 4) 코스 id 기반으로 "랜덤처럼" 보이도록 인덱스 결정 (하지만 항상 동일)
+        final int profileIndex =
+            idStr.hashCode.abs() % mockProfiles.length;
+        final selectedProfile = mockProfiles[profileIndex];
+
+        // 5) Course 인스턴스 생성
         return Course(
-            id: json['id'].toString(),
+            id: idStr,
             title: json['title'] ?? '',
             subtitle: json['summary'] ?? '',
             durationMinutes: json['duration_minutes'] as int,
@@ -62,9 +94,10 @@ class Course {
                 : 0,
             categoryEmoji: emoji,
             categoryBgColor: bgColor,
-            reviewerName: json['created_by_name'] ?? '',
-            reviewerMeta: '',
-            reviewAgoText: '',
+            // 백엔드 필드 대신 위에서 선택한 목업 프로필 적용
+            reviewerName: selectedProfile['name'] as String,
+            reviewerMeta: selectedProfile['meta'] as String,
+            reviewAgoText: selectedProfile['ago'] as String,
         );
         }
 }

@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
 import 'screens/country_select_page.dart';
 import 'theme/app_theme.dart';
+import 'models/user_profile.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const TravelLightApp());
+  runApp(
+    Provider<UserProfile>(
+      create: (_) => const UserProfile(
+        country: TravelerCountry.germany,
+        firstName: 'User First name',
+        lastName: 'User Last name',
+        age: 25,),
+      child: const TravelLightApp(),
+    ),
+  );
 }
 
 class TravelLightApp extends StatelessWidget {
