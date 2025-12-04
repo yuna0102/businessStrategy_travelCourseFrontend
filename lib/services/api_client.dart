@@ -3,8 +3,10 @@
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+
 import '../models/storage_location.dart';
 import '../models/course.dart';
+import '../models/course_detail.dart';
 
 class StorageApiService {
     static const String baseUrl = 'http://127.0.0.1:8000/api';
@@ -54,5 +56,19 @@ class CourseApiService {
         return data
             .map((e) => Course.fromJson(e as Map<String, dynamic>))
             .toList();
+    }
+
+    // 코스 상세 조회 가능한 메서드
+    static Future<CourseDetail> fetchCourseDetail(int courseId) async {
+        final uri = Uri.parse('$baseUrl/courses/$courseId/');
+        final res = await http.get(uri);
+
+        if (res.statusCode != 200) {
+        throw Exception('Failed to load course detail');
+        }
+
+        final Map<String, dynamic> jsonBody =
+            json.decode(res.body) as Map<String, dynamic>;
+        return CourseDetail.fromJson(jsonBody);
     }
 }

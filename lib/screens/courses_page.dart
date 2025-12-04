@@ -6,31 +6,36 @@ import 'course_detail_page.dart';
 
 
 enum CourseDurationFilter {
-  thirty,    // 30분
-  sixty,     // 60분 = 1 hour
-  oneTwenty, // 120분 = 2 hours
+    all, 
+    thirty,    // 30분
+    sixty,     // 60분 = 1 hour
+    oneTwenty, // 120분 = 2 hours
 }
 
 extension CourseDurationFilterX on CourseDurationFilter {
     String get label {
         switch (this) {
-        case CourseDurationFilter.thirty:
-            return '30 min';
-        case CourseDurationFilter.sixty:
-            return '1 hour';
-        case CourseDurationFilter.oneTwenty:
-            return '2 hours';
-        }
+            case CourseDurationFilter.all:
+                return 'All';
+            case CourseDurationFilter.thirty:
+                return '30 min';
+            case CourseDurationFilter.sixty:
+                return '1 hour';
+            case CourseDurationFilter.oneTwenty:
+                return '2 hours';
+            }
     }
 
     int get minutes {
         switch (this) {
-        case CourseDurationFilter.thirty:
-            return 30;
-        case CourseDurationFilter.sixty:
-            return 60;
-        case CourseDurationFilter.oneTwenty:
-            return 120;
+            case CourseDurationFilter.all:
+                return 0;
+            case CourseDurationFilter.thirty:
+                return 30;
+            case CourseDurationFilter.sixty:
+                return 60;
+            case CourseDurationFilter.oneTwenty:
+                return 120;
         }
     }
 }
@@ -139,9 +144,14 @@ class CoursesPage extends StatefulWidget {
     }
 
 class _CoursesPageState extends State<CoursesPage> {
-    CourseDurationFilter _selectedDuration = CourseDurationFilter.thirty;
+    CourseDurationFilter _selectedDuration = CourseDurationFilter.all;
     
     List<Course> get _filteredCourses {
+        // All 선택 시 전체 코스 노출
+        if (_selectedDuration == CourseDurationFilter.all) {
+            return widget.courses;
+        }
+
         final target = _selectedDuration.minutes;
         // durationMinutes가 target(30/60/120)에 해당하는 코스만 보여주기
         return widget.courses.where((c) => c.durationMinutes == target).toList();
@@ -313,7 +323,6 @@ class _StartFromCard extends StatelessWidget {
     }
 }
 
-/// 상단 시간 필터 Row (30 min / 1 hour / 2 hours)
 class _DurationFilterRow extends StatelessWidget {
     final CourseDurationFilter selected;
     final ValueChanged<CourseDurationFilter> onChanged;
@@ -329,39 +338,48 @@ class _DurationFilterRow extends StatelessWidget {
         color: Colors.white,
         child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
             child: Row(
-            children: [
+                children: [
+                CourseDurationFilter.all,
                 CourseDurationFilter.thirty,
                 CourseDurationFilter.sixty,
                 CourseDurationFilter.oneTwenty,
-            ].map((filter) {
+                ].map((filter) {
                 final isSelected = selected == filter;
                 return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
                     label: Text(
-                    filter.label,
-                    style: TextStyle(
-                        color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                        filter.label,
+                        style: TextStyle(
+                        color: isSelected
+                            ? Colors.white
+                            : const Color(0xFF6B7280),
                         fontWeight: FontWeight.w600,
-                    ),
+                        ),
                     ),
                     selected: isSelected,
                     onSelected: (_) => onChanged(filter),
                     selectedColor: AppColors.primary,
                     backgroundColor: Colors.white,
                     side: BorderSide(
-                    color:
-                        isSelected ? AppColors.primary : const Color(0xFFE5E7EB),
+                        color: isSelected
+                            ? AppColors.primary
+                            : const Color(0xFFE5E7EB),
                     ),
                     shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(999),
                     ),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 10,
+                    ),
+                    ),
                 );
-            }).toList(),
+                }).toList(),
+            ),
             ),
         ),
         );

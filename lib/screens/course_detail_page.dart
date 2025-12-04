@@ -1,22 +1,40 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../models/course.dart';
 
-class CourseDetailPage extends StatelessWidget {
-    final Course course;
+// 연결
+import '../models/course.dart';
+import '../models/course_detail.dart';
+import '../services/api_client.dart';
+
+class CourseDetailPage extends StatefulWidget {
+    final Course course; // 리스트에서 넘어온 요약 정보
 
     const CourseDetailPage({
         super.key,
         required this.course,
     });
 
+    @override
+    State<CourseDetailPage> createState() => _CourseDetailPageState();
+}
+
+class _CourseDetailPageState extends State<CourseDetailPage> {
+    late Future<CourseDetail> _futureDetail;
+
+    @override
+    void initState() {
+        super.initState();
+        final int courseId = int.tryParse(widget.course.id) ?? 0;
+        _futureDetail = CourseApiService.fetchCourseDetail(courseId);
+    }
+
     void _showRecommenderBottomSheet(BuildContext context) {
-      showModalBottomSheet(
+        showModalBottomSheet(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder: (_) => const _RecommenderProfileBottomSheet(),
-      );
+        );
     }
 
     @override
@@ -89,163 +107,200 @@ class CourseDetailPage extends StatelessWidget {
 
         body: SafeArea(
             top: false, // AppBar 아래까지 쓰기
-            child: SingleChildScrollView(
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            child: FutureBuilder<CourseDetail>(
+            future: _futureDetail,
+            builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError || !snapshot.hasData) {
+                return Center(
+                    child: Text(
+                    'Failed to load course detail',
+                    style: AppTextStyles.body,
+                    ),
+                );
+                }
+
+                final detail = snapshot.data!;
+                return SingleChildScrollView(
+                child: _CourseDetailBody(
+                    detail: detail,
+                    onRecommenderTap: () => _showRecommenderBottomSheet(context),
+                ),
+                );
+            },
+            ),
+        ),
+        );
+    }
+}
+
+/// 실제 내용 레이아웃
+class _CourseDetailBody extends StatelessWidget {
+    final CourseDetail detail;
+    final VoidCallback onRecommenderTap;
+
+    const _CourseDetailBody({
+        required this.detail,
+        required this.onRecommenderTap,
+    });
+
+    @override
+    Widget build(BuildContext context) {
+        final stops = detail.stops;
+        final summary = detail.recommenderSummary;
+        final rep = summary.representative;
+
+        // 대표 추천자 정보가 없을 때를 위한 기본(mock) 값
+        final int headerTotalRecommenders =
+            summary.totalCount > 0 ? summary.totalCount : 23;
+        final String headerName = rep?.name ?? 'Emma Mueller';
+        final String headerFlag =
+            (rep?.countryFlagEmoji ?? '').isNotEmpty ? rep!.countryFlagEmoji : '🌍';
+
+        // 총 거리(m) 합산
+        final int totalDistanceM = stops.fold<int>(
+        0,
+        (acc, s) => acc + (s.distanceFromPrevM ?? 0),
+        );
+        final String distanceLabel =
+            totalDistanceM > 0 ? '${(totalDistanceM / 1000).toStringAsFixed(1)}km' : '-';
+
+        final String durationLabel = '${detail.durationMinutes}min';
+        final String ratingLabel = detail.rating.toStringAsFixed(1);
+
+        return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+            // Start from 영역
+            _StartFromRow(
+            location: detail.storageName.isNotEmpty
+                ? detail.storageName
+                : 'Start point',
+            ),
+
+            const SizedBox(height: 12),
+
+            // duration / stops 칩
+            Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
                 children: [
-                // Start from 영역
-                const _StartFromRow(
-                    location: 'Seoul Station Locker', // TODO: 나중에 param 연결
+                _InfoChip(
+                    label: '${detail.durationMinutes} min course',
+                    selected: true,
                 ),
-
-                const SizedBox(height: 12),
-
-                // 1-hour course / 3 stops 칩
-                Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                    children: const [
-                        _InfoChip(label: '1-hour course', selected: true),
-                        SizedBox(width: 8),
-                        _InfoChip(label: '3 stops', selected: false),
-                    ],
-                    ),
+                const SizedBox(width: 8),
+                _InfoChip(
+                    label: '${stops.length} stops',
+                    selected: false,
                 ),
-
-                const SizedBox(height: 12),
-
-                // 대표 추천 여행자 헤더
-                _RecommenderHeaderSection(
-                  totalRecommenders: 23,
-                  name: 'Emma Mueller',
-                  countryFlag: '🇩🇪',
-                  visitText: 'Visited Seoul 2 weeks ago',
-                  onTap: () => _showRecommenderBottomSheet(context),
-                ),
-
-                const SizedBox(height: 16),
-
-                // 코스 타이틀 / 설명
-                Container(
-                    width: double.infinity,
-                    color: Colors.white,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                        Text(
-                        course.title,
-                        style: AppTextStyles.pageTitle.copyWith(fontSize: 20),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                        'Perfect for a quick cultural immersion before your next journey.',
-                        style: AppTextStyles.body.copyWith(
-                            fontSize: 14,
-                            color: AppColors.textMuted,
-                        ),
-                        ),
-                    ],
-                    ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // 타임라인(걷는시간 + 스톱 카드들)
-                Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                    children: const [
-                        SizedBox(height: 4),
-
-                        _WalkTimelineRow(
-                        label: '5 min walk',
-                        isFirst: true,
-                        ),
-                        SizedBox(height: 8),
-                        _StopTimelineRow(
-                        isFirst: false,
-                        isLast: false,
-                        title: 'Café Onion',
-                        subtitle:
-                            'Historic hanok turned trendy cafe with amazing pastries',
-                        stayLabel: '15 min stay',
-                        ratingLabel: '4.8',
-                        imageUrl: 'https://picsum.photos/600/360?cafe',
-                        ),
-
-                        SizedBox(height: 12),
-
-                        _WalkTimelineRow(
-                        label: '8 min walk',
-                        isFirst: false,
-                        ),
-                        SizedBox(height: 8),
-                        _StopTimelineRow(
-                        isFirst: false,
-                        isLast: false,
-                        title: 'Ikseon Hanok Alley',
-                        subtitle:
-                            'Charming traditional alley with boutique shops and galleries',
-                        stayLabel: '20 min explore',
-                        ratingLabel: '4.6',
-                        imageUrl: 'https://picsum.photos/600/360?ikseon',
-                        ),
-
-                        SizedBox(height: 12),
-
-                        _WalkTimelineRow(
-                        label: '12 min walk',
-                        isFirst: false,
-                        ),
-                        SizedBox(height: 8),
-                        _StopTimelineRow(
-                        isFirst: false,
-                        isLast: true,
-                        title: 'Gyeongbokgung Palace',
-                        subtitle:
-                            'Majestic royal palace with changing of the guard ceremony',
-                        stayLabel: '25 min visit',
-                        ratingLabel: '4.9',
-                        imageUrl: 'https://picsum.photos/600/360?palace',
-                        ),
-
-                        SizedBox(height: 16),
-                    ],
-                    ),
-                ),
-
-                // 하단 요약 (거리 / 시간 / 평점)
-                Container
-                (
-                    width: double.infinity,
-                    color: Colors.white,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    child: Row(
-                    children: const [
-                        _SummaryStat(
-                        value: '2.1km',
-                        label: 'Total distance',
-                        ),
-                        _SummaryStat(
-                        value: '60min',
-                        label: 'Duration',
-                        ),
-                        _SummaryStat(
-                        value: '4.8',
-                        label: 'Rating',
-                        ),
-                    ],
-                    ),
-                ),
-
-                const SizedBox(height: 12),
                 ],
             ),
             ),
-        ),
+
+            const SizedBox(height: 12),
+
+            // 대표 추천 여행자 헤더 (항상 노출, 없으면 mock 데이터 사용)
+            _RecommenderHeaderSection(
+                totalRecommenders: headerTotalRecommenders,
+                name: headerName,
+                countryFlag: headerFlag,
+                visitText: 'Visited recently',
+                onTap: onRecommenderTap,
+            ),
+
+            const SizedBox(height: 16),
+
+            // 코스 타이틀 / 설명
+            Container(
+            width: double.infinity,
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                Text(
+                    detail.title,
+                    style: AppTextStyles.pageTitle.copyWith(fontSize: 20),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                    detail.summary.isNotEmpty
+                        ? detail.summary
+                        : 'Perfect for a quick cultural immersion before your next journey.',
+                    style: AppTextStyles.body.copyWith(
+                    fontSize: 14,
+                    color: AppColors.textMuted,
+                    ),
+                ),
+                ],
+            ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // 타임라인(걷는시간 + 스톱 카드들)
+            Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+                children: [
+                const SizedBox(height: 4),
+                for (int i = 0; i < stops.length; i++) ...[
+                    if (stops[i].walkMinutesFromPrev != null)
+                    _WalkTimelineRow(
+                        label: '${stops[i].walkMinutesFromPrev} min walk',
+                        isFirst: i == 0,
+                    ),
+                    if (stops[i].walkMinutesFromPrev != null)
+                    const SizedBox(height: 8),
+                    _StopTimelineRow(
+                    isFirst: i == 0,
+                    isLast: i == stops.length - 1,
+                    title: stops[i].name,
+                    subtitle: stops[i].description,
+                    stayLabel: stops[i].stayMinutes != null
+                        ? '${stops[i].stayMinutes} min stay'
+                        : '',
+                    ratingLabel: stops[i].rating != null
+                        ? stops[i].rating!.toStringAsFixed(1)
+                        : '-',
+                    imageUrl: stops[i].imageUrl,
+                    ),
+                    const SizedBox(height: 12),
+                ],
+                const SizedBox(height: 16),
+                ],
+            ),
+            ),
+
+            // 하단 요약 (거리 / 시간 / 평점)
+            Container(
+            width: double.infinity,
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+                children: [
+                _SummaryStat(
+                    value: distanceLabel,
+                    label: 'Total distance',
+                ),
+                _SummaryStat(
+                    value: durationLabel,
+                    label: 'Duration',
+                ),
+                _SummaryStat(
+                    value: ratingLabel,
+                    label: 'Rating',
+                ),
+                ],
+            ),
+            ),
+
+            const SizedBox(height: 12),
+        ],
         );
     }
 }
@@ -380,7 +435,8 @@ class _TimelineBar extends StatelessWidget {
             Expanded(
                 child: Container(
                 width: 1.5,
-                color: showBottom ? const Color(0xFFBFDBFE) : Colors.transparent,
+                color:
+                    showBottom ? const Color(0xFFBFDBFE) : Colors.transparent,
                 ),
             ),
             ],
@@ -447,7 +503,7 @@ class _StopTimelineRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
             _TimelineBar(
-            showTop: !isFirst,
+            showTop: true,
             showBottom: !isLast,
             isSolidDot: true,
             ),
@@ -482,38 +538,42 @@ class _StopTimelineRow extends StatelessWidget {
                     ),
                     ),
                     Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                         Text(
                             title,
-                            style: AppTextStyles.bodyBold.copyWith(fontSize: 15),
+                            style:
+                                AppTextStyles.bodyBold.copyWith(fontSize: 15),
                         ),
                         const SizedBox(height: 4),
-                        Text(
+                        if (subtitle.isNotEmpty)
+                            Text(
                             subtitle,
                             style: AppTextStyles.body.copyWith(
-                            fontSize: 13,
-                            color: const Color(0xFF4B5563),
+                                fontSize: 13,
+                                color: const Color(0xFF4B5563),
                             ),
-                        ),
+                            ),
                         const SizedBox(height: 10),
                         Row(
                             children: [
-                            const Icon(
+                            if (stayLabel.isNotEmpty) ...[
+                                const Icon(
                                 Icons.access_time,
                                 size: 14,
                                 color: Color(0xFF6B7280),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
                                 stayLabel,
                                 style: AppTextStyles.caption.copyWith(
-                                color: const Color(0xFF6B7280),
+                                    color: const Color(0xFF6B7280),
                                 ),
-                            ),
+                                ),
+                            ],
                             const Spacer(),
                             const Icon(
                                 Icons.star,
@@ -540,9 +600,9 @@ class _StopTimelineRow extends StatelessWidget {
         ],
         );
     }
-}
+    }
 
-class _SummaryStat extends StatelessWidget {
+    class _SummaryStat extends StatelessWidget {
     final String value;
     final String label;
 
@@ -611,7 +671,8 @@ class _RecommenderHeaderSection extends StatelessWidget {
                         decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(999),
                         image: const DecorationImage(
-                            image: NetworkImage('https://picsum.photos/80/80?traveler'),
+                            image:
+                                NetworkImage('https://picsum.photos/80/80?traveler'),
                             fit: BoxFit.cover,
                         ),
                         ),
@@ -620,7 +681,8 @@ class _RecommenderHeaderSection extends StatelessWidget {
                         right: -4,
                         bottom: -4,
                         child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 1),
                         decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(999),
@@ -654,7 +716,8 @@ class _RecommenderHeaderSection extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                         name,
-                        style: AppTextStyles.bodyBold.copyWith(fontSize: 15),
+                        style:
+                            AppTextStyles.bodyBold.copyWith(fontSize: 15),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -718,7 +781,8 @@ class _RecommenderProfileBottomSheet extends StatelessWidget {
                             decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(999),
                                 image: const DecorationImage(
-                                image: NetworkImage('https://picsum.photos/160/160?traveler-main'),
+                                image: NetworkImage(
+                                    'https://picsum.photos/160/160?traveler-main'),
                                 fit: BoxFit.cover,
                                 ),
                                 boxShadow: const [
@@ -734,7 +798,8 @@ class _RecommenderProfileBottomSheet extends StatelessWidget {
                             right: -2,
                             bottom: -2,
                             child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 4, vertical: 2),
                                 decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(999),
@@ -750,7 +815,8 @@ class _RecommenderProfileBottomSheet extends StatelessWidget {
                         const SizedBox(height: 16),
                         Text(
                         'Emma Mueller',
-                        style: AppTextStyles.pageTitle.copyWith(fontSize: 20),
+                        style:
+                            AppTextStyles.pageTitle.copyWith(fontSize: 20),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -811,7 +877,8 @@ class _RecommenderProfileBottomSheet extends StatelessWidget {
                             // TODO: 팔로우 기능
                             },
                             style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFFE5E7EB)),
+                            side:
+                                const BorderSide(color: Color(0xFFE5E7EB)),
                             backgroundColor: const Color(0xFFF9FAFB),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(999),
