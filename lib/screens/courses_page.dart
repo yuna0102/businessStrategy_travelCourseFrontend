@@ -657,10 +657,18 @@ class _CourseCard extends StatelessWidget {
                         const BorderRadius.vertical(top: Radius.circular(16)),
                     child: AspectRatio(
                         aspectRatio: 341 / 192,
-                        child: Image.network(
-                        course.imageUrl,
-                        fit: BoxFit.cover,
-                        ),
+                        child: 
+                            Image.network(
+                                course.imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                    // 이미지 로딩 실패하면 여기로 들어옴
+                                    return Image.asset(
+                                    'assets/images/course_placeholder.jpeg',
+                                    fit: BoxFit.cover,
+                                    );
+                                },
+                                )
                     ),
                     ),
                     Positioned(

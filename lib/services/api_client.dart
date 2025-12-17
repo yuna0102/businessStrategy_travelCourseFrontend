@@ -9,7 +9,7 @@ import '../models/course.dart';
 import '../models/course_detail.dart';
 
 class StorageApiService {
-    static const String baseUrl = 'http://127.0.0.1:8000/api';
+    static const String baseUrl = 'https://travelcourseapp.onrender.com/api';
 
     static Future<List<StorageLocation>> fetchStorages({
         DistrictFilter? district,
@@ -41,7 +41,7 @@ class StorageApiService {
 
 // course api 붙이는 클래스
 class CourseApiService {
-    static const String baseUrl = 'http://127.0.0.1:8000/api';
+    static const String baseUrl = 'https://travelcourseapp.onrender.com/api';
 
     /// 특정 보관소의 코스 리스트 가져오기
     static Future<List<Course>> fetchCoursesByStorage(int storageId) async {

@@ -20,8 +20,8 @@ class FindStoragePage extends StatefulWidget {
 
     class _FindStoragePageState extends State<FindStoragePage> {
     // 필터 선택 상태 표시
-    DistrictFilter _selectedDistrict = DistrictFilter.yongsan;
-    StorageType _selectedType = StorageType.stationLocker;
+    DistrictFilter _selectedDistrict = DistrictFilter.jongno;
+    StorageType _selectedType = StorageType.localStorage;
 
     late Future<List<StorageLocation>> _futureStorages;
 
@@ -157,7 +157,11 @@ class FindStoragePage extends StatefulWidget {
                     child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
-                        children: StorageType.values.map((type) {
+                        children: [
+                            StorageType.localStorage,
+                            StorageType.stationLocker,
+                            StorageType.privateStorage,
+                        ].map((type) {
                             final bool isSelected = _selectedType == type;
                             return Padding(
                             padding: const EdgeInsets.only(right: 8),
